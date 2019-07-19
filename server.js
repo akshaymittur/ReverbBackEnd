@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt-nodejs')
 const cors = require('cors')
+const db = require('knex')
 
 const app = express()
 
@@ -90,6 +91,26 @@ app.post('/getnotes', (req, res) => {
 			found = true
 			return res.json(user.notes)
 		}
+		if (!found) {
+			res.status(400).json('Not Found')
+		}
+	})
+})
+
+app.delete('/deletenote', (req, res) => {
+	const { note } = req.body
+	let found = false
+	database.users.forEach(user => {
+		user.notes.forEach(text => {
+			if (text === note) {
+			found = true
+			user.notes = user.notes.filter(lol => { 
+    			return lol !== note
+				})
+		}
+		return user.text
+		})
+		
 		if (!found) {
 			res.status(400).json('Not Found')
 		}
