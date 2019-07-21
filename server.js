@@ -2,7 +2,21 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt-nodejs')
 const cors = require('cors')
-const db = require('knex')
+const knex = require('knex')
+
+const db = knex({
+  client: 'pg',
+  connection: {
+    host : '127.0.0.1',
+    user : 'postgres',
+    password : 'root',
+    database : 'reverb'
+  }
+})
+
+db.select('*').from('users').then(data => {
+	console.log(data)
+})
 
 const app = express()
 
@@ -44,77 +58,70 @@ app.post('/signin',(req, res) => {
 
 app.post('/register', (req, res) => {
 	const { email, name, password } = req.body
-	database.users.push({
-		id:'124',
-		name: name,
+	db('users')
+	.returning('*')
+	.insert({
 		email: email,
-		text: [],
+		name: name,
+		notes: ['Welcome!', 'Hello!'],
 		joined: new Date()
 	})
-	res.json(database.users[database.users.length-1])
+	.then(user => {
+		res.json(user[0])
+	})
+	.catch(err => res.status(400).json('Unable to register'))
 })
 
 app.get('/profile/:id', (req, res) => {
 	const { id } = req.params
-	let found = false
-	database.users.forEach(user => {
-		if (user.id === id) {
-			found = true
-			return res.json(user)
-		}
-		if (!found) {
-			res.status(400).json('No User')
+	db.select('*').from('users').where({
+		id: id
+	})
+	.then(user => {
+		if(user.length) {
+			res.json(user[0])
+		} else {
+			res.status(400).json('Not Found')
 		}
 	})
+	.catch(err => res.status(400).json('Error Getting User'))
 })
 
 app.put('/notesave', (req, res) => {
 	const { text, id } = req.body
-	let found = false
-	database.users.forEach(user => {
-		if (user.id === id) {
-			found = true
-			user.notes.push(text)
-			return res.json(user)
-		}
-		if (!found) {
-			res.status(400).json('Not Found')
-		}
+	db('users').where('id', '=', id)
+	.update({
+		notes: db.raw('array_append(notes, ?)', [text])
 	})
+	.returning('notes')
+	.then(notes => {
+		res.json(notes)
+	})
+	.catch(err => res.status(400).json('Unable to Get Notes'))
 })
 
 app.post('/getnotes', (req, res) => {
 	const { id } = req.body
-	let found = false
-	database.users.forEach(user => {
-		if (user.id === id) {
-			found = true
-			return res.json(user.notes)
-		}
-		if (!found) {
-			res.status(400).json('Not Found')
-		}
-	})
+	db.select('notes').from('users').where('id', '=', id)
+	.then(notes => res.json(notes[0]))
+	.catch(err => res.status(400).json('Unable to Get Notes'))
+
 })
 
 app.delete('/deletenote', (req, res) => {
-	const { note } = req.body
-	let found = false
-	database.users.forEach(user => {
-		user.notes.forEach(text => {
-			if (text === note) {
-			found = true
-			user.notes = user.notes.filter(lol => { 
-    			return lol !== note
-				})
-		}
-		return user.text
+	const { id, note } = req.body
+	db('users').where({
+		id: id
 		})
-		
-		if (!found) {
-			res.status(400).json('Not Found')
-		}
+	.update({
+		notes: db.raw('array_remove(notes, ?)', [note])
 	})
+	.returning('notes')
+	.then(notes => {
+		res.json(notes[0])
+	})
+	.catch(err => res.status(400).json('Unable to Delete Notes'))
+
 })
 
 app.listen(3000, () => {
