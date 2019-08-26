@@ -1,3 +1,11 @@
-## Project Reverb - Records and stores your voice notes using speech recognition for future use.
+# Reverb 
+Records and stores your voice notes using speech recognition for future use.
 
-#### [Visit the site now!](https://reverb.ga)
+# Usage
+Reverb has been built and deployed using netlify. You can use it [here](https://reverb.ga)
+
+## Project Status
+Completed
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
